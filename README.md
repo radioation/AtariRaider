@@ -3,8 +3,9 @@ Z Raider - Analog Joystick for Atari 800/XL/XE Computers
 
 Just a nigh-useless analog joystick project for Atari 8-bit computers. It's meant to 
 work with my [port](https://github.com/radioation/StarRaidersMods) of the Atari 5200 
-analog controls to the 8-bit version. It might actually work with the 2600, but I
-don't have one and there are no games for it anyway.
+Star Raiders analog controls to the 8-bit version. 
+
+Z Raider may work with other computers and consoles but I've not tested this.
 
 
 My work is largely based on:
