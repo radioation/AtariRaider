@@ -1,9 +1,9 @@
-# AtariRaider
-Atari Raider - Analog Joystick for Atari 800/XL/XE Computers
+# Z Raider Stick
+Z Raider - Analog Joystick for Atari 800/XL/XE Computers
 
-Just a nigh-useless analog joystick project for Atari 8-bit computers. My work is largely based on:
-* Jeff Piepmeier's [Atari POKEY Actuation with Arduino](https://jeffpiepmeier.blogspot.com/2020/02/atari-pokey-actuation-with-arduino.html) blog post. My initial tests followed this pretty closesly. He doesn't state which diode he used. So Itried a few that I had on hand and the 1N4001 worked pretty well. Unfortunately, I was having a hard time getting stable values for two axis. A single axis using delays worked well. Adding a second axis introduced jitter. Most likely due to the way I was tracking the pulse delays.
-* [Stingray](https://github.com/Danjovic/Stingray) a Nintendo Classic controller adapter with keypad emulation for Atari 5200. This project handled the pulse delays in using the Arduino UNO's TIMER2 interrupt. Using this gives much better results than my delay code in loop().
+Just a nigh-useless analog joystick project for Atari 8-bit computers.  My work is largely based on:
+* Jeff Piepmeier's [Atari POKEY Actuation with Arduino](https://jeffpiepmeier.blogspot.com/2020/02/atari-pokey-actuation-with-arduino.html) blog post. My initial tests followed this pretty closesly. He doesn't state which diode he used. So I tried a few that I had on hand and the 1N4001 worked pretty well. Unfortunately, I was having a hard time getting stable values for two axis. A single axis using delays worked well. Adding a second axis introduced jitter. Most likely due to the way I was tracking the pulse delays.
+* Danjovic's [Stingray](https://github.com/Danjovic/Stingray). This is Nintendo Classic controller adapter with keypad emulation for the Atari 5200. This project handled the pulse delays in using the Arduino UNO's TIMER2 interrupt. Using this technique gives much better results than my delay code in loop().
 
 
 # Circuit
