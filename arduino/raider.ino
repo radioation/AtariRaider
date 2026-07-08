@@ -119,11 +119,11 @@ void loop()
 {
      // Read modern thumbsticks (0 to 1023)
      const uint16_t rawX = analogRead(thumbXpin);
-    const uint16_t rawY = analogRead(thumbYpin);
+    const uint16_t rawY = 1023 - analogRead(thumbYpin);
 
     // map to usable range (rounded values()
     const uint16_t mappedX = MIN_RANGE +   (((uint32_t)rawX * (MAX_RANGE - MIN_RANGE) + 511) / 1023) +  PULSE_DELAY;
-    const uint16_t mappedY =  MIN_RANGE + (((uint32_t)rawY * (MAX_RANGE - MIN_RANGE) + 511) / 1023) + PULSE_DELAY;
+    const uint16_t mappedY = MIN_RANGE + (((uint32_t)rawY * (MAX_RANGE - MIN_RANGE) + 511) / 1023) + PULSE_DELAY;
 
     // save for next interrupt
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
