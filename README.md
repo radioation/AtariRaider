@@ -26,7 +26,4 @@ My work is largely based on:
 
   
 
-
-
-
-
+![ZRaider schematic](images/ZRaider_schematic.png)
