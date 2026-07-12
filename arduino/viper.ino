@@ -132,7 +132,7 @@ ISR(ANALOG_COMP_vect)
 
 void setup()
 {
-
+  DEBUG_BEGIN(9600);
   pinMode(potX1pin, OUTPUT);
   pinMode(potY1pin, OUTPUT);
   pinMode(potX2pin, OUTPUT);
