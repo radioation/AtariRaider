@@ -69,17 +69,19 @@ int main(void)
 {
     uint16_t p = (uint16_t)pmgMem;
 
+    uint8_t p0x;
+    uint8_t p0y;
+    uint8_t x0;
+    uint8_t y0;
+    uint8_t old_y0;
     uint8_t p1x;
     uint8_t p1y;
     uint8_t x1;
-    uint8_t y1;
-    uint8_t old_y1;
-    uint8_t p2x;
-    uint8_t p2y;
-    uint8_t x2;
     uint8_t y2;
     uint8_t old_y2;
 
+    uint8_t stick0;
+    uint8_t stick1;
     clrscr();
 
     ANTIC.pmbase = p >> 8;
@@ -108,54 +110,57 @@ int main(void)
 
     while (1) {
       // paddles
-        p1x = PEEK(PADDL0_ADDR);
-        p1y = PEEK(PADDL1_ADDR);
-        p2x = PEEK(PADDL2_ADDR);
-        p2y = PEEK(PADDL3_ADDR);
+        p0x = PEEK(PADDL0_ADDR);
+        p0y = PEEK(PADDL1_ADDR);
+        p1x = PEEK(PADDL2_ADDR);
+        p1y = PEEK(PADDL3_ADDR);
 
+        x0 = map_paddle_to_hpos(p0x);
+        y0 = map_paddle_to_y(p0y);
         x1 = map_paddle_to_hpos(p1x);
-        y1 = map_paddle_to_y(p1y);
-        x2 = map_paddle_to_hpos(p2x);
-        y2 = map_paddle_to_y(p2y);
+        y2 = map_paddle_to_y(p1y);
 
 
-        erase_dot(player0, old_y1);
-        draw_dot(player0, y1);
-        old_y1 = y1;
+        erase_dot(player0, old_y0);
+        draw_dot(player0, y0);
+        old_y0 = y0;
 
         erase_dot(player1, old_y2);
         draw_dot(player1, y2);
         old_y2 = y2;
 
-        GTIA_WRITE.hposp0 = x1;
-        GTIA_WRITE.hposp1 = x2;
+        GTIA_WRITE.hposp0 = x0;
+        GTIA_WRITE.hposp1 = x1;
+
         gotoxy( 0, 20);
-        cprintf( "X1:%3u Y1:%3u", x1, y1);
+        cprintf( "X1:%3u Y1:%3u", x0, y0);
         gotoxy( 26, 20);
-        cprintf( "X2:%3u Y2:%3u", x2, y2);
+        cprintf( "X2:%3u Y2:%3u", x1, y2);
 
         // sticks
+        stick0 = PEEK(632);
         gotoxy( 9,10 );
-        cputc('U');
-        gotoxy( 9,14 );
-        cputc('D');
-        gotoxy( 7,12 );
-        cputc('L');
-        gotoxy( 11,12 );
-        cputc('R');
+        cputc('U'+ ( ~stick0 & 0x01 ?  128 : 0));
+        gotoxy( 9,14 );                      
+        cputc('D'+ ( ~stick0 & 0x02 ?  128 : 0));
+        gotoxy( 7,12 );                      
+        cputc('L'+ ( ~stick0 & 0x04 ?  128 : 0));
+        gotoxy( 11,12 );                     
+        cputc('R'+ ( ~stick0 & 0x08 ?  128 : 0));
         gotoxy( 13,10 );
-        cputc('F'+128);
+        cputc('F'+ (PEEK(644) ? 128 : 0));
         // sticks
+        stick1 = PEEK(633);
         gotoxy( 29,10 );
-        cputc('U');
+        cputc('U'+ ( ~stick1 & 0x01 ?  128 : 0));
         gotoxy( 29,14 );
-        cputc('D');
+        cputc('D'+ ( ~stick1 & 0x02 ?  128 : 0));
         gotoxy( 27,12 );
-        cputc('L');
+        cputc('L'+ ( ~stick1 & 0x04 ?  128 : 0));
         gotoxy( 31,12 );
-        cputc('R');
+        cputc('R'+ ( ~stick1 & 0x08 ?  128 : 0));
         gotoxy( 33,10 );
-        cputc('F'+128);
+        cputc('F'+ (PEEK(645) ? 128 : 0));
     }
 
     // nevah!
