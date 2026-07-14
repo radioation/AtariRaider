@@ -8,7 +8,7 @@
   #define DEBUG_BEGIN(speed) Serial.begin(speed)
   #define DEBUG_PRINT(x)     Serial.print(x)
   #define DEBUG_PRINTF(format, ...) { \
-    char _dbgBuf[64]; \
+    char _dbgBuf[128]; \
     snprintf(_dbgBuf, sizeof(_dbgBuf), format, ##__VA_ARGS__); \
     Serial.println(_dbgBuf); \
   }
@@ -39,8 +39,7 @@ uint16_t min1Y = 1023, max1Y = 0;
 uint16_t min2X = 1023, max2X = 0;
 uint16_t min2Y = 1023, max2Y = 0;
 #endif
-
-
+   
 // Observed single axis input range seems to be 0 to 222 but I see 1-225 in PADDLE() reads. 
 // * I did see some strange behavior with 2-axis with values above 210 on my XL and maybe at 0 or 1.  
 //   A stable range seems to be 6-210 on my 800XL, this may need to change as I test more units.
@@ -184,11 +183,8 @@ void loop()
     if (raw2X < min2X) min2X = raw2X;  if (raw2X > max2X) max2X = raw2X;
     if (raw2Y < min2Y) min2Y = raw2Y;  if (raw2Y > max2Y) max2Y = raw2Y;
 
-    DEBUG_PRINTF("ST1 X: [%d] Min:%d Max:%d", raw1X, min1X, max1X);
-    DEBUG_PRINTF("ST1 Y: [%d] Min:%d Max:%d", raw1Y, min1Y, max1Y);
-    DEBUG_PRINTF("ST2 X: [%d] Min:%d Max:%d", raw2X, min2X, max2X);
-    DEBUG_PRINTF("ST2 Y: [%d] Min:%d Max:%d", raw2Y, min2Y, max2Y);
-    DEBUG_PRINTF("-----------------------------------");
+    DEBUG_PRINTF("ST1 X: [%d] Min:%d Max:%d ST1 Y: [%d] Min:%d Max:%d ST2 X: [%d] Min:%d Max:%d ST2 Y: [%d] Min:%d Max:%d", raw1X, min1X, max1X, raw1Y, min1Y, max1Y, raw2X, min2X, max2X, raw2Y, min2Y, max2Y);
+
   #endif
 
   // map to usable range (rounded values()
@@ -207,4 +203,5 @@ void loop()
 
   delay(5);
 }
+
 
