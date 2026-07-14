@@ -2,7 +2,7 @@
 #include <avr/interrupt.h>
 #include <util/atomic.h>
 
-#define DEBUG 1   
+// #define DEBUG 1
 
 #ifdef DEBUG
   #define DEBUG_BEGIN(speed) Serial.begin(speed)
@@ -30,10 +30,12 @@ const uint8_t thumbYpin = A1;
 #ifdef DEBUG
 // Global variables to store the absolute Min and Max values found
 uint16_t minX = 1023, maxX = 0;
-uint16_t minY = 1023, maxY = 0;
+uint16_t minY = 1023, maxY = 0; 
 #endif
 
-
+// check for hline getting stuck 
+unsigned int hlineStuckCounter = 0; 
+const unsigned int HLINE_STUCK_LIMIT = 10;  // just a guess
 
 // Observed single axis input range seems to be 0 to 222 but I see 1-225 in PADDLE() reads. 
 // * I did see some strange behavior with 2-axis with values above 210 on my XL and maybe at 0 or 1.  
@@ -101,12 +103,22 @@ ISR(ANALOG_COMP_vect)
 
   hline = 0;
 
-  // resetting timer
-  TCNT2 = 0;
-  TIFR2 = (1 << OCF2A);
+  // // resetting timer
+  // TCNT2 = 0;
+  // TIFR2 = (1 << OCF2A);
 
   ACSR &= ~(1 << ACIE); // disable comparator
 }
+
+void restartComparator() { 
+  ACSR &= ~(1 << ACIE); // disable comparator
+  
+  delayMicroseconds(50); 
+  hline= 0;
+  ACSR |= (1 << ACI);   // clear any pending interrupt bit
+  ACSR |= (1 << ACIE);  // reactivate analog comparator
+}
+
 
 void setup()
 {
@@ -118,6 +130,10 @@ void setup()
   digitalWrite(potX1pin, LOW);
   digitalWrite(potY1pin, LOW);
 
+
+  // comparator
+  pinMode(6, INPUT);
+  pinMode(7, INPUT);
 
   // Setup Timer2
   TCCR2A = (0 << WGM20) // WGM[2..0] = 010 CTC mode, counts up overflow on OCR2A
@@ -151,9 +167,7 @@ void loop()
   //  get min/max vals
   if (rawX < minX) minX = rawX;  if (rawX > maxX) maxX = rawX;
   if (rawY < minY) minY = rawY;  if (rawY > maxY) maxY = rawY;
-  DEBUG_PRINTF("ST1 X: [%d] Min:%d Max:%d", rawX, minX, maxX);
-  DEBUG_PRINTF("ST1 Y: [%d] Min:%d Max:%d", rawY, minY, maxY);
-  DEBUG_PRINTF("-----------------------------------");
+  DEBUG_PRINTF("ST1 X: [%d] Min:%d Max:%d ST1 Y: [%d] Min:%d Max:%d h: %d", rawX, minX, maxX, rawY, minY, maxY, hline); 
 
 #endif
 
@@ -163,9 +177,21 @@ void loop()
 
   // save for next interrupt
   ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+    // nextPotX = 120; //mappedX;
+    // nextPotY = 50; //mappedY;
     nextPotX = mappedX;
     nextPotY = mappedY;
   }
 
-  delay(10);
+  //are we stuck?
+  if (hline >= 258) {
+     hlineStuckCounter++;
+     if( hlineStuckCounter > HLINE_STUCK_LIMIT ) {
+        restartComparator();
+        hlineStuckCounter = 0;
+     }
+  } else {
+    hlineStuckCounter = 0; 
+  }
+  delay(3);
 }
