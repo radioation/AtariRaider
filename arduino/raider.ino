@@ -2,7 +2,7 @@
 #include <avr/interrupt.h>
 #include <util/atomic.h>
 
-// #define DEBUG 1
+#define DEBUG 1
 
 #ifdef DEBUG
   #define DEBUG_BEGIN(speed) Serial.begin(speed)
@@ -20,18 +20,31 @@
   #define DEBUG_PRINTLN(x)
 #endif
 
+void (*runLoop)();  // 
 
 const uint8_t potX1pin = 3;
 const uint8_t potY1pin = 4;
+const uint8_t calibratePin = 8;
 
 const uint8_t thumbXpin = A0;
 const uint8_t thumbYpin = A1;
 
-#ifdef DEBUG
+
+//#ifdef DEBUG
 // Global variables to store the absolute Min and Max values found
 uint16_t minX = 1023, maxX = 0;
 uint16_t minY = 1023, maxY = 0; 
-#endif
+//#endif
+uint16_t midX = 511, midY = 511;
+#define CALIBRATION_DURATION_MS 10000
+#define CAL_BUTTON_LOCKOUT_MS 1000
+#define MID_SAMPLE_COUNT 10
+unsigned long lockoutStart = 0;
+unsigned long calStart = 0;
+
+ 
+
+
 
 // check for hline getting stuck 
 unsigned int hlineStuckCounter = 0; 
@@ -135,6 +148,9 @@ void setup()
   pinMode(6, INPUT);
   pinMode(7, INPUT);
 
+  // switch
+  pinMode( calibratePin, INPUT_PULLUP);
+
   // Setup Timer2
   TCCR2A = (0 << WGM20) // WGM[2..0] = 010 CTC mode, counts up overflow on OCR2A
     | (1 << WGM21); //
@@ -156,20 +172,31 @@ void setup()
     | (1 << ACIS1);  // Unlike Stingray/5200, I trigger on FALLING edge (when POKEY clamps to 0V)
 
   sei();
+  runLoop = mainLoop;
 }
 
-void loop()
+bool buttonPressed() {
+  if (millis() < CAL_BUTTON_LOCKOUT_MS  + lockoutStart) return false;   // ignore during lockout
+  static bool lastState = HIGH;
+  bool state = digitalRead(calibratePin);
+  bool pressed = (lastState == HIGH && state == LOW);  // falling edge
+  lastState = state;
+  if (pressed) lockoutStart = millis();
+  return pressed;
+}
+
+void mainLoop()
 {
   // Read modern thumbsticks (0 to 1023)
   const uint16_t rawX = analogRead(thumbXpin);
   const uint16_t rawY = 1023 - analogRead(thumbYpin);
-#ifdef DEBUG
-  //  get min/max vals
-  if (rawX < minX) minX = rawX;  if (rawX > maxX) maxX = rawX;
-  if (rawY < minY) minY = rawY;  if (rawY > maxY) maxY = rawY;
-  DEBUG_PRINTF("ST1 X: [%d] Min:%d Max:%d ST1 Y: [%d] Min:%d Max:%d h: %d", rawX, minX, maxX, rawY, minY, maxY, hline); 
+// #ifdef DEBUG
+//   //  get min/max vals
+//   if (rawX < minX) minX = rawX;  if (rawX > maxX) maxX = rawX;
+//   if (rawY < minY) minY = rawY;  if (rawY > maxY) maxY = rawY;
+//   DEBUG_PRINTF("ST1 X: [%d] Min:%d Max:%d ST1 Y: [%d] Min:%d Max:%d h: %d", rawX, minX, maxX, rawY, minY, maxY, hline); 
 
-#endif
+// #endif
 
   // map to usable range (rounded values()
   const uint16_t mappedX = MIN_RANGE +   (((uint32_t)rawX * (MAX_RANGE - MIN_RANGE) + 511) / 1023) +  PULSE_DELAY;
@@ -193,5 +220,59 @@ void loop()
   } else {
     hlineStuckCounter = 0; 
   }
+
+  if( buttonPressed()){
+    startCalibration();
+  }
   delay(3);
+}
+
+void startCalibration() {
+  #ifdef DEBUG
+  DEBUG_PRINT("START CAL\n");
+  #endif
+   // get a few readings for center.
+   uint32_t sumX = 0;
+   uint32_t sumY = 0;
+   for( int i=0; i <MID_SAMPLE_COUNT ; i++ ) {
+    sumX +=  analogRead(thumbXpin);
+    sumY += 1023 - analogRead(thumbYpin);
+    delay(10);
+   }
+   midX = sumX / MID_SAMPLE_COUNT;
+   midY = sumY / MID_SAMPLE_COUNT;
+ 
+ minX = 1023; maxX = 0;
+ minY = 1023; maxY = 0; 
+
+  calStart = millis();
+   runLoop = calibrationLoop;
+
+}
+void calibrationLoop() {
+  const uint16_t rawX = analogRead(thumbXpin);
+  const uint16_t rawY = 1023 - analogRead(thumbYpin);
+ 
+  //  get min/max vals
+  if (rawX < minX) minX = rawX;  
+  if (rawX > maxX) maxX = rawX;
+  if (rawY < minY) minY = rawY;  
+  if (rawY > maxY) maxY = rawY;
+
+#ifdef DEBUG 
+ // DEBUG_PRINTF("ST1 X: [%d] Min:%d Max:%d ST1 Y: [%d] Min:%d Max:%d h: %d", rawX, minX, maxX, rawY, minY, maxY, hline); 
+#endif
+  bool timedOut = ( millis() >  calStart +CALIBRATION_DURATION_MS );
+  bool userQuit = buttonPressed();
+
+  if( timedOut || userQuit ) {
+    runLoop = mainLoop;
+  #ifdef DEBUG
+      DEBUG_PRINTF("MID X: [%d] Min: %d Max: %d MID Y: [%d] Min: %d Max: %d", midX, minX, maxX,   midY, minY, maxY);
+#endif
+  }
+}
+
+void loop() {
+  runLoop();
 }
