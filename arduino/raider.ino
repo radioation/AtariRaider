@@ -26,7 +26,10 @@ void (*runLoop)();
 const uint8_t potX1pin = 3;
 const uint8_t potY1pin = 4;
 const uint8_t calibratePin = 8;
-
+#ifdef DEBUG
+const uint8_t debugComparatorPin = 9;
+const uint8_t comparatorStatePin = 10;
+#endif
 const uint8_t thumbXpin = A0;
 const uint8_t thumbYpin = A1;
 
@@ -128,6 +131,9 @@ ISR(TIMER2_COMPA_vect)
 // Analog comparator, triggers when detect that pokey released POT inputs to charge
 ISR(ANALOG_COMP_vect)
 {
+#ifdef DEBUG
+    PORTB |= _BV(PB1);    // D9 high
+#endif
     // Keep both output pins low while POKEY is discharging the POT lines.
     PORTD &= ~((1 << PD3) | (1 << PD4));
 
@@ -142,6 +148,9 @@ ISR(ANALOG_COMP_vect)
     // TIFR2 = (1 << OCF2A);
 
     ACSR &= ~(1 << ACIE); // disable comparator
+#ifdef DEBUG
+     PORTB &= ~_BV(PB1);   // D9 low
+#endif
 }
 
 void restartComparator() { 
@@ -170,6 +179,14 @@ void setup()
 
     // switch
     pinMode( calibratePin, INPUT_PULLUP);
+
+#ifdef DEBUG
+    // pin for sigrok
+    pinMode( debugComparatorPin, OUTPUT);
+    pinMode( comparatorStatePin, OUTPUT);
+    digitalWrite( debugComparatorPin, LOW);
+    digitalWrite( comparatorStatePin, LOW);
+#endif
 
     // Setup Timer2
     TCCR2A = (0 << WGM20) // WGM[2..0] = 010 CTC mode, counts up overflow on OCR2A
@@ -221,6 +238,16 @@ bool buttonPressed() {
 
 void mainLoop()
 {
+
+    // Mirror the live comparator output onto D10.
+#ifdef DEBUG
+    if (ACSR & _BV(ACO)) {
+        PORTB |= _BV(PB2);
+    } else {
+        PORTB &= ~_BV(PB2);
+    }
+#endif
+
     // Read modern thumbsticks (0 to 1023)
     const uint16_t rawX = analogRead(thumbXpin);
     const uint16_t rawY = 1023 - analogRead(thumbYpin);
